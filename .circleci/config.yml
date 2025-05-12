@@ -307,8 +307,6 @@
 #   build-test-deploy:
 #     jobs:
 #       - build-and-upload
-version: 2.1
-
 jobs:
   build-and-upload:
     macos:
