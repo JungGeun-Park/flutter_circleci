@@ -349,13 +349,6 @@ jobs:
             flutter precache --ios
 
       - run:
-          name: Flutter Clean & Pub Get
-          command: |
-            cd $PROJECT_DIR/..
-            flutter clean
-            flutter pub get
-
-      - run:
           name: Build Flutter iOS (Generates xcconfig)
           command: |
             cd $PROJECT_DIR/..
@@ -458,6 +451,13 @@ jobs:
               cd $(dirname "$PROJECT_NAME")
             fi
             xcrun agvtool new-version -all $CIRCLE_BUILD_NUM
+
+      - run:
+          name: Flutter Clean & Pub Get
+          command: |
+            cd $PROJECT_DIR/..
+            flutter clean
+            flutter pub get
 
       - run:
           name: Setup xcconfig includes and Podfile
