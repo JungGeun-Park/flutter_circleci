@@ -333,32 +333,6 @@ jobs:
             source $BASH_ENV
 
       - run:
-          name: Download Flutter SDK
-          command: |
-            cd ~
-            curl -O https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.27.4-stable.zip
-            unzip flutter_macos_arm64_3.27.4-stable.zip
-
-      - run:
-          name: Add Flutter to PATH and Setup iOS Environment
-          command: |
-            echo 'export PATH="$PATH:~/flutter/bin"' >> $BASH_ENV
-            echo 'export FLUTTER_ROOT="/Users/distiller/flutter"' >> $BASH_ENV
-            source $BASH_ENV
-            flutter config --no-analytics
-            flutter precache --ios
-
-      - run:
-          name: Build Flutter iOS (Generates xcconfig)
-          command: |
-            cd $PROJECT_DIR/..
-            flutter build ios --release --no-codesign
-            if [ ! -f "$PROJECT_DIR/Flutter/Generated.xcconfig" ]; then
-              echo "❌ ERROR: Generated.xcconfig not found after build"
-              exit 1
-            fi
-
-      - run:
           name: Extract Workspace and Scheme
           command: |
             cd $PROJECT_DIR
@@ -434,14 +408,6 @@ jobs:
             cat ./exportOptions.plist
 
       - run:
-          name: Clean Flutter Project
-          command: |
-            cd $PROJECT_DIR
-            flutter clean
-            rm -rf ios/Flutter/Flutter.framework
-            xcodebuild clean -workspace Runner.xcworkspace -scheme Runner
-
-      - run:
           name: Auto-increment Build Number
           command: |
             cd $PROJECT_DIR
@@ -451,6 +417,40 @@ jobs:
               cd $(dirname "$PROJECT_NAME")
             fi
             xcrun agvtool new-version -all $CIRCLE_BUILD_NUM
+
+      - run:
+          name: Download Flutter SDK
+          command: |
+            cd ~
+            curl -O https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.27.4-stable.zip
+            unzip flutter_macos_arm64_3.27.4-stable.zip
+
+      - run:
+          name: Add Flutter to PATH and Setup iOS Environment
+          command: |
+            echo 'export PATH="$PATH:~/flutter/bin"' >> $BASH_ENV
+            echo 'export FLUTTER_ROOT="/Users/distiller/flutter"' >> $BASH_ENV
+            source $BASH_ENV
+            flutter config --no-analytics
+            flutter precache --ios
+
+      - run:
+          name: Build Flutter iOS (Generates xcconfig)
+          command: |
+            cd $PROJECT_DIR/..
+            flutter build ios --release --no-codesign
+            if [ ! -f "$PROJECT_DIR/Flutter/Generated.xcconfig" ]; then
+              echo "❌ ERROR: Generated.xcconfig not found after build"
+              exit 1
+            fi
+
+      - run:
+          name: Clean Flutter Project
+          command: |
+            cd $PROJECT_DIR
+            flutter clean
+            rm -rf ios/Flutter/Flutter.framework
+            xcodebuild clean -workspace Runner.xcworkspace -scheme Runner
 
       - run:
           name: Flutter Clean & Pub Get
