@@ -382,14 +382,7 @@ jobs:
             echo 'export PATH="$FLUTTER_HOME/bin:$PATH"' >> ~/.zshrc
             source ~/.zshrc
             flutter doctor -v
-
-            sudo gem install cocoapods
-            pod setup
-
             flutter pub get
-            cd ios
-            pod install
-            cd ..
             flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
 
       # Upload to TestFlight
