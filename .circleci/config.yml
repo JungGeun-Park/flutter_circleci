@@ -219,7 +219,7 @@ jobs:
             flutter pub get
             
             # iOS 빌드 파일 생성
-            flutter build ios --release --no-codesign
+            # flutter build ios --release --no-codesign
             
             # Generated.xcconfig 파일 확인
             if [ ! -f "$PROJECT_DIR/Flutter/Generated.xcconfig" ]; then
