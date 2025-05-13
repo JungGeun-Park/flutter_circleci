@@ -383,17 +383,9 @@ jobs:
             source ~/.zshrc
             flutter doctor -v
 
-      # 3. Install CocoaPods with proper Ruby setup
-      - run:
-          name: Install CocoaPods
-          command: |
             sudo gem install cocoapods
             pod setup
 
-      # Build IPA
-      - run:
-          name: Build Flutter IPA
-          command: |
             flutter pub get
             cd ios
             pod install
