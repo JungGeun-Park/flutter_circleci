@@ -374,7 +374,7 @@ jobs:
 
       - checkout
       
-      # 1. Install Flutter with proper PATH configuration
+      # Install Flutter and Build IPA
       - run:
           name: Install Flutter SDK
           command: |
