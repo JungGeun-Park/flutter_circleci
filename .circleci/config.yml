@@ -383,20 +383,13 @@ jobs:
             source ~/.zshrc
             flutter doctor -v
 
-      # 2. Verify Flutter availability in subsequent steps
-      - run:
-          name: Check Flutter Path
-          command: |
-            which flutter
-            flutter --version
-
       # 3. Install CocoaPods with proper Ruby setup
       - run:
           name: Install CocoaPods
           command: |
             sudo gem install cocoapods
             pod setup
-            
+
       # Build IPA
       - run:
           name: Build Flutter IPA
