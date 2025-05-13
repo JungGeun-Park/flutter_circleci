@@ -314,6 +314,8 @@ executors:
     macos:
       xcode: 16.0.0
     environment:
+      FLUTTER_HOME: "/Users/distiller/project/flutter"
+      PATH: "${FLUTTER_HOME}/bin:${PATH}"
       TEAM_ID: "22X77ENQ2H"
       APPLE_ID: "puzznic@inka.co.kr"
       CERTIFICATE_PASSWORD: "123456"
@@ -327,14 +329,6 @@ jobs:
     steps:
       - checkout
       
-      # Set up Flutter environment
-      - run:
-          name: Install Flutter
-          command: |
-            git clone https://github.com/flutter/flutter.git -b stable --depth 1
-            export PATH="$PATH:$(pwd)/flutter/bin"
-            flutter doctor -v
-
       # Generate ExportOptions.plist dynamically
       - run:
           name: Create ExportOptions.plist
@@ -365,13 +359,6 @@ jobs:
             </plist>
             EOF
 
-      # Install dependencies
-      - run:
-          name: Install CocoaPods
-          command: |
-            sudo gem install cocoapods
-            pod setup
-
       # Set up code signing
       - run:
           name: Import Certificates
@@ -385,6 +372,31 @@ jobs:
             security default-keychain -s build.keychain
             security unlock-keychain -p circle build.keychain
 
+      - checkout
+      
+      # 1. Install Flutter with proper PATH configuration
+      - run:
+          name: Install Flutter SDK
+          command: |
+            git clone https://github.com/flutter/flutter.git -b stable --depth 1
+            echo 'export PATH="$FLUTTER_HOME/bin:$PATH"' >> ~/.zshrc
+            source ~/.zshrc
+            flutter doctor -v
+
+      # 2. Verify Flutter availability in subsequent steps
+      - run:
+          name: Check Flutter Path
+          command: |
+            which flutter
+            flutter --version
+
+      # 3. Install CocoaPods with proper Ruby setup
+      - run:
+          name: Install CocoaPods
+          command: |
+            sudo gem install cocoapods
+            pod setup
+            
       # Build IPA
       - run:
           name: Build Flutter IPA
