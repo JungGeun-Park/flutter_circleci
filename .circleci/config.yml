@@ -237,7 +237,6 @@ jobs:
             echo '#include "Flutter/Generated.xcconfig"' > Flutter/Debug.xcconfig
             
             # CocoaPods 설치
-            pod init  # Podfile이 없는 경우에만 생성
             pod install --repo-update            
 
       - run:
