@@ -383,13 +383,13 @@ jobs:
             source ~/.zshrc
             flutter doctor -v
             flutter pub get
+            flutter clean
             # flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
 
       - run:
           name: Clean Flutter Project
           command: |
             cd $PROJECT_DIR
-            flutter clean
             rm -rf ios/Flutter/Flutter.framework
             xcodebuild clean -workspace Runner.xcworkspace -scheme Runner
 
