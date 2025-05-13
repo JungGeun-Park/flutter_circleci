@@ -383,7 +383,63 @@ jobs:
             source ~/.zshrc
             flutter doctor -v
             flutter pub get
-            flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+            # flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+
+      - run:
+          name: Clean Flutter Project
+          command: |
+            cd $PROJECT_DIR
+            flutter clean
+            rm -rf ios/Flutter/Flutter.framework
+            xcodebuild clean -workspace Runner.xcworkspace -scheme Runner
+
+      - run:
+          name: 빌드 번호 자동 증가
+          command: |
+            cd $PROJECT_DIR
+            if [ ! -z "$WORKSPACE_NAME" ]; then
+              cd $(dirname "$WORKSPACE_NAME")
+            else
+              cd $(dirname "$PROJECT_NAME")
+            fi
+            
+            # CircleCI의 빌드 번호를 사용하여 앱 빌드 번호 설정
+            xcrun agvtool new-version -all $CIRCLE_BUILD_NUM
+
+      - run:
+          name: 빌드
+          command: |
+            cd $PROJECT_DIR
+            
+            if [ ! -z "$WORKSPACE_NAME" ]; then
+              xcodebuild \
+                -workspace "$WORKSPACE_NAME" \
+                -scheme "$SCHEME_NAME" \
+                -configuration Release \
+                -destination 'generic/platform=iOS' \
+                -allowProvisioningUpdates \
+                -archivePath "${SCHEME_NAME}.xcarchive" \
+                archive
+            else
+              xcodebuild \
+                -project "$PROJECT_NAME" \
+                -scheme "$SCHEME_NAME" \
+                -configuration Release \
+                -destination 'generic/platform=iOS' \
+                -allowProvisioningUpdates \
+                -archivePath "${SCHEME_NAME}.xcarchive" \
+                archive
+            fi
+
+      - run:
+          name: Export IPA
+          command: |
+            cd $PROJECT_DIR
+            xcodebuild \
+              -exportArchive \
+              -archivePath "${SCHEME_NAME}.xcarchive" \
+              -exportOptionsPlist ./exportOptions.plist \
+              -exportPath ./artifacts
 
       # Upload to TestFlight
       - run:
