@@ -229,13 +229,6 @@ jobs:
           command: |
             cd $PROJECT_DIR
             
-            # # Release.xcconfig 파일이 Generated.xcconfig를 올바르게 참조하도록 수정
-            # echo '#include "Flutter/Generated.xcconfig"' > Flutter/Release.xcconfig
-            # echo '#include "Flutter/Generated.xcconfig"' > Flutter/Debug.xcconfig
-            
-            # # CocoaPods 설치
-            # pod install --repo-update       
-
             pod deintegrate  # 기존 통합 제거
             pod install --clean-install  # 완전히 새로운 설치
             sed -i -e 's/use_frameworks!/use_frameworks! :linkage => :static/g' Podfile  # 정적 링킹 설정                 
