@@ -48,20 +48,20 @@ jobs:
             echo 'export FLUTTER_ROOT="/Users/distiller/flutter"' >> $BASH_ENV
             source $BASH_ENV
             
-            # iOS 개발에 필요한 Flutter 컴포넌트만 설치
+            # Install only the Flutter components required for iOS development
             flutter config --no-analytics
             flutter precache --ios
 
       - run:
           name: Setup iOS Build
           command: |
-            cd $PROJECT_DIR/..
+            cd $PROJECT_DIR
             flutter clean
             flutter pub get
             
             cd $PROJECT_DIR
             rm -f Podfile
-            cat > Podfile \<< EOL
+            cat > Podfile << EOL
               platform :ios, '12.0'
 
               # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
@@ -78,7 +78,6 @@ jobs:
                 unless File.exist?(generated_xcode_build_settings_path)
                   raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
                 end
-
                 File.foreach(generated_xcode_build_settings_path) do |line|
                   matches = line.match(/FLUTTER_ROOT\=(.*)/)
                   return matches[1].strip if matches
@@ -113,7 +112,7 @@ jobs:
             echo "Directory contents:"
             ls -la
             
-            # Flutter iOS 프로젝트는 항상 Runner를 사용
+            # Flutter iOS projects always use Runner
             PROJECT_NAME="Runner.xcodeproj"
             WORKSPACE_NAME="Runner.xcworkspace"
             SCHEME_NAME="Runner"
@@ -129,13 +128,12 @@ jobs:
               echo "❌ ERROR: BUNDLE_ID could not be extracted."
               exit 1
             fi
-            
             echo "BUNDLE_ID=\"$BUNDLE_ID\"" >> $BASH_ENV
             echo Bundle ID = ${BUNDLE_ID}
             source $BASH_ENV
 
       - run:
-          name: 키체인 설정
+          name: Keychain Setup
           command: |
             security create-keychain -p circle circle.keychain
             security default-keychain -s circle.keychain
@@ -143,14 +141,14 @@ jobs:
             security set-keychain-settings -t 3600 -l ~/Library/Keychains/circle.keychain
       
       - run:
-          name: 인증서 설치
+          name: Install Certificate
           command: |
             cd $PROJECT_DIR
             security import ./distribution.p12 -k ~/Library/Keychains/circle.keychain -P $CERTIFICATE_PASSWORD -T /usr/bin/codesign
             security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k circle circle.keychain
       
       - run:
-          name: 프로비저닝 프로파일 설치
+          name: Install Provisioning Profile
           command: |
             cd $PROJECT_DIR
             mkdir -p ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/
@@ -160,7 +158,7 @@ jobs:
           name: Generate exportOptions.plist
           command: |
             cd $PROJECT_DIR
-            cat > ./exportOptions.plist \<< EOL
+            cat > ./exportOptions.plist << EOL
             <?xml version="1.0" encoding="UTF-8"?>
             <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
             <plist version="1.0">
@@ -196,7 +194,7 @@ jobs:
             xcodebuild clean -workspace Runner.xcworkspace -scheme Runner
 
       - run:
-          name: 빌드 번호 자동 증가
+          name: Auto Increment Build Number
           command: |
             cd $PROJECT_DIR
             if [ ! -z "$WORKSPACE_NAME" ]; then
@@ -205,20 +203,19 @@ jobs:
               cd $(dirname "$PROJECT_NAME")
             fi
             
-            # CircleCI의 빌드 번호를 사용하여 앱 빌드 번호 설정
+            # Set the app build number using CircleCI build number
             xcrun agvtool new-version -all $CIRCLE_BUILD_NUM
-
 
       - run:
           name: Generate Flutter Files
           command: |
-            cd $PROJECT_DIR/..
-            # Flutter 빌드 전 Generated.xcconfig 생성을 위한 설정
+            cd $PROJECT_DIR
+            # Configuration to generate Generated.xcconfig before Flutter build
             flutter config --no-analytics
             flutter clean
             flutter pub get
             
-            # Generated.xcconfig 파일 확인
+            # Check for Generated.xcconfig file
             if [ ! -f "$PROJECT_DIR/Flutter/Generated.xcconfig" ]; then
               echo "❌ ERROR: Generated.xcconfig not found after build"
               exit 1
@@ -229,12 +226,12 @@ jobs:
           command: |
             cd $PROJECT_DIR
             
-            pod deintegrate  # 기존 통합 제거
-            pod install --clean-install  # 완전히 새로운 설치
-            sed -i -e 's/use_frameworks!/use_frameworks! :linkage => :static/g' Podfile  # 정적 링킹 설정                 
+            pod deintegrate  # Remove existing integration
+            pod install --clean-install  # Completely new install
+            sed -i -e 's/use_frameworks!/use_frameworks! :linkage => :static/g' Podfile  # Set static linkage                 
 
       - run:
-          name: 빌드
+          name: Build
           command: |
             cd $PROJECT_DIR
             
@@ -266,28 +263,36 @@ jobs:
               -exportArchive \
               -archivePath "${SCHEME_NAME}.xcarchive" \
               -exportOptionsPlist ./exportOptions.plist \
-              -exportPath ./artifacts
+              -exportPath ./build/ios/ipa
 
       - run:
           name: Generate Hash
           command: |
             cd $PROJECT_DIR
-
-            # 스크립트에 실행 권한 부여
+            # Grant execute permission to the script
             HASH_SCRIPT=$(find . -name "generate_hash" -path "*/AppSealingSDK/*")
             
             if [ -z "$HASH_SCRIPT" ]; then
               echo "❌ ERROR: generate_hash script not found in AppSealingSDK directory"
               exit 1
-            fi
-            
+            fi            
             chmod +x "$HASH_SCRIPT"
+
+            # IPA 파일 경로 명시적 지정
+            IPA_PATH="./build/ios/ipa/${SCHEME_NAME}.ipa"
             
-            # IPA 파일 경로를 파라미터로 전달하여 스크립트 실행
-            "$HASH_SCRIPT" "./artifacts/${SCHEME_NAME}.ipa"
+            if [ ! -f "$IPA_PATH" ]; then
+              echo "❌ ERROR: IPA file not found at $IPA_PATH"
+              echo "Directory contents:"
+              ls -R ./build/ios/ipa
+              exit 1
+            fi            
+            
+            # Run the script with IPA file path as parameter
+            "$HASH_SCRIPT" "$IPA_PATH"
                         
       - run:
-          name: App Store Connect에 업로드
+          name: Upload to App Store Connect
           command: |
             cd $PROJECT_DIR
             xcrun altool --upload-app \
