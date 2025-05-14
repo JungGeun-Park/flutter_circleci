@@ -283,8 +283,10 @@ jobs:
               exit 1
             fi
             
-            echo "✅ Found IPA file: $IPA_PATH"
-            
+            echo "✅ Found IPA file: $IPA_PATH"                  
+            echo "export IPA_PATH=\"$IPA_PATH\"" >> $BASH_ENV
+            source $BASH_ENV
+
             HASH_SCRIPT=$(find . -name "generate_hash" -path "*/AppSealingSDK/*")
             if [ -z "$HASH_SCRIPT" ]; then
               echo "❌ ERROR: generate_hash script not found"
