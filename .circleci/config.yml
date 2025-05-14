@@ -113,7 +113,7 @@ jobs:
             echo "Directory contents:"
             ls -la
             
-            Flutter iOS projects always use Runner
+            # Flutter iOS projects always use Runner
             PROJECT_NAME="Runner.xcodeproj"
             WORKSPACE_NAME="Runner.xcworkspace"
             SCHEME_NAME="Runner"
