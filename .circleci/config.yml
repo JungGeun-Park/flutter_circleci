@@ -113,7 +113,7 @@ jobs:
             echo "Directory contents:"
             ls -la
             
-            # Flutter iOS 프로젝트는 항상 Runner를 사용
+            Flutter iOS projects always use Runner
             PROJECT_NAME="Runner.xcodeproj"
             WORKSPACE_NAME="Runner.xcworkspace"
             SCHEME_NAME="Runner"
@@ -135,7 +135,7 @@ jobs:
             source $BASH_ENV
 
       - run:
-          name: 키체인 설정
+          name: Keychain Settings
           command: |
             security create-keychain -p circle circle.keychain
             security default-keychain -s circle.keychain
@@ -143,14 +143,14 @@ jobs:
             security set-keychain-settings -t 3600 -l ~/Library/Keychains/circle.keychain
       
       - run:
-          name: 인증서 설치
+          name: Installing a Certificate
           command: |
             cd $PROJECT_DIR
             security import ./distribution.p12 -k ~/Library/Keychains/circle.keychain -P $CERTIFICATE_PASSWORD -T /usr/bin/codesign
             security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k circle circle.keychain
       
       - run:
-          name: 프로비저닝 프로파일 설치
+          name: Installing a provisioning profile
           command: |
             cd $PROJECT_DIR
             mkdir -p ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/
@@ -196,7 +196,7 @@ jobs:
             xcodebuild clean -workspace Runner.xcworkspace -scheme Runner
 
       - run:
-          name: 빌드 번호 자동 증가
+          name: Automatically increment build number
           command: |
             cd $PROJECT_DIR
             if [ ! -z "$WORKSPACE_NAME" ]; then
@@ -205,7 +205,7 @@ jobs:
               cd $(dirname "$PROJECT_NAME")
             fi
             
-            # CircleCI의 빌드 번호를 사용하여 앱 빌드 번호 설정
+            # Set your app build number using CircleCI's build number
             xcrun agvtool new-version -all $CIRCLE_BUILD_NUM
 
 
@@ -213,12 +213,12 @@ jobs:
           name: Generate Flutter Files
           command: |
             cd $PROJECT_DIR/..
-            # Flutter 빌드 전 Generated.xcconfig 생성을 위한 설정
+            # Setting up Generated.xcconfig before building Flutter
             flutter config --no-analytics
             flutter clean
             flutter pub get
             
-            # Generated.xcconfig 파일 확인
+            # Check the Generated.xcconfig file
             if [ ! -f "$PROJECT_DIR/Flutter/Generated.xcconfig" ]; then
               echo "❌ ERROR: Generated.xcconfig not found after build"
               exit 1
@@ -229,12 +229,12 @@ jobs:
           command: |
             cd $PROJECT_DIR
             
-            pod deintegrate  # 기존 통합 제거
-            pod install --clean-install  # 완전히 새로운 설치
-            sed -i -e 's/use_frameworks!/use_frameworks! :linkage => :static/g' Podfile  # 정적 링킹 설정                 
+            pod deintegrate
+            pod install --clean-install
+            sed -i -e 's/use_frameworks!/use_frameworks! :linkage => :static/g' Podfile  # Setting up static linking
 
       - run:
-          name: 빌드
+          name: Build and Archive
           command: |
             cd $PROJECT_DIR
             
@@ -272,30 +272,30 @@ jobs:
           name: Generate Hash
           command: |
             cd $PROJECT_DIR
-            # Grant execute permission to the script
-            HASH_SCRIPT=$(find . -name "generate_hash" -path "*/AppSealingSDK/*")
             
-            if [ -z "$HASH_SCRIPT" ]; then
-              echo "❌ ERROR: generate_hash script not found in AppSealingSDK directory"
-              exit 1
-            fi            
-            chmod +x "$HASH_SCRIPT"
-
-            # IPA 파일 경로 명시적 지정
-            IPA_PATH="./build/ios/ipa/${SCHEME_NAME}.ipa"
+            # Dynamic retrieval of IPA file path (including subdirectories)
+            IPA_PATH=$(find ./build/ios/ipa -name "*.ipa" -print -quit)
             
-            if [ ! -f "$IPA_PATH" ]; then
-              echo "❌ ERROR: IPA file not found at $IPA_PATH"
-              echo "Directory contents:"
+            if [ -z "$IPA_PATH" ]; then
+              echo "❌ ERROR: No IPA file found in ./build/ios/ipa"
+              echo "Directory structure:"
               ls -R ./build/ios/ipa
               exit 1
-            fi            
+            fi
             
-            # Run the script with IPA file path as parameter
+            echo "✅ Found IPA file: $IPA_PATH"
+            
+            HASH_SCRIPT=$(find . -name "generate_hash" -path "*/AppSealingSDK/*")
+            if [ -z "$HASH_SCRIPT" ]; then
+              echo "❌ ERROR: generate_hash script not found"
+              exit 1
+            fi
+            
+            chmod +x "$HASH_SCRIPT"
             "$HASH_SCRIPT" "$IPA_PATH"
                         
       - run:
-          name: App Store Connect에 업로드
+          name: Upload to App Store Connect
           command: |
             cd $PROJECT_DIR
             xcrun altool --upload-app \
