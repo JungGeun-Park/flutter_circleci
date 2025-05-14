@@ -300,7 +300,7 @@ jobs:
             cd $PROJECT_DIR
             xcrun altool --upload-app \
               --type ios \
-              --file "./artifacts/${SCHEME_NAME}.ipa" \
+              --file "$IPA_PATH" \
               --username "$APPLE_ID" \
               --password "$APP_SPECIFIC_PASSWORD" \
               --verbose            
